@@ -1,4 +1,4 @@
-using Plots
+using Plots, LinearAlgebra
 gr()
 
 s = 0.4;
@@ -54,23 +54,28 @@ Vx = v(x1);
 n = 1; it = 1;
 u_ic = u;
 tim = [0.0];
-while((n-1)*∂t<10)
-    sd = s ->  ((c .* vcat([s[2]],[s[i+1]-s[i-1] for i = 2:N-1], [s[N-1]]))/2∂x) .+ ((im) .* ((vcat([s[2] - 2*s[1]], diff(diff(s)), [s[Int(N-1)] - 2*s[Int(N)]])/2∂x^2) .- (Vx .* s) .- (abs.(s).^2 .* s) .+ s .- (G .* s) .+ (μ .* s))) ;
+err = [0.0];
+sd = s ->  ((c .* vcat([s[2]],[s[i+1]-s[i-1] for i = 2:N-1], [s[N-1]]))/2∂x) .+ ((im) .* ((vcat([s[2] - 2*s[1]], diff(diff(s)), [s[Int(N-1)] - 2*s[Int(N)]])/2∂x^2) .- (Vx .* s) .- (abs.(s).^2 .* s) .+ s .- (G .* s) .+ (μ .* s))) ;
+while(true)
     k1 = ∂t2.*sd(u);
     k2 = ∂t2.*sd(u.+(k1./2));
     k3 = ∂t2.*sd(u.+(k2./2));
     k4 = ∂t2.*sd(u.+(k3));
     u1 = u .+ ((k1 .+ (2 .* k2) .+ (2 .* k3) .+ k4)./6);
     global n += 1;
-    if(mod(n,25)==0)
+    if(mod(n,Int(1/∂t))==0)
         global u_ic = [u_ic u1];
         push!(tim,(n-1)*∂t);
+        push!(err, norm(abs.(u1) .- abs.(u)));
         global it += 1;
-        # Plots.display(plot(tim,x1,abs.(u_save).^2));
+        Plots.display(plot(tim,err,ylims=(10^-8,0.005),yscale=:log10));
         # sleep(0.1)
     end
+    u2 = u;
     global u = u1;
-end
+    if(norm(abs.(u1).^2 .- abs.(u2).^2) < 10^-8)
+        break;
+    end end
 
 
 Plots.display(plot(x1,abs.(u_ic[:,end]).^2));
