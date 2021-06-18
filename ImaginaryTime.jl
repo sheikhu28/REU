@@ -2,7 +2,7 @@ using Plots, LinearAlgebra
 gr()
 
 s = 0.4;
-∂x = 1/30;
+∂x = 1/20;
 ∂t = s * ∂x^2;
 
 ll = 300;
@@ -24,49 +24,45 @@ function R(x)
         return g(x,-x₀);
     else
         return g(x,x₀);
-    end
-end
+    end end
 
 function ϕ(x)
     if(x<0)
         return 2*f(0)-f(-x);
     else
         return f(x);
-    end
-end
-w = 250;
-γ(x) = (1-exp(-((x)/w)^12));
+    end end
+w = 300;
+γ(x) = (1-exp(-(x/w)^12));
 G = 10 .* γ.(x1);
 
 u = (R.(x1) .* exp.(im .* ϕ.(x1)));
 
 function v(x)
     λ = 2;
-    ϵ = 0.0001;
+    ϵ = 10^-3;
     return λ*(1/sqrt(2pi*ϵ))*exp.(-(x.^2)/(2ϵ));
 end
 Vx = v(x1);
 
 μ = 0;
 
-∂t2 = -(im)*∂t; #imaginary time
-
 n = 1; it = 1;
 u_ic = u;
 tim = [0.0];
 err = [0.0];
-sd = s ->  ((c .* vcat([s[2]],[s[i+1]-s[i-1] for i = 2:N-1], [s[N-1]]))/2∂x) .+ ((im) .* ((vcat([s[2] - 2*s[1]], diff(diff(s)), [s[Int(N-1)] - 2*s[Int(N)]])/2∂x^2) .- (Vx .* s) .- (abs.(s).^2 .* s) .+ s .- (G .* s) .+ (μ .* s))) ;
+sd = s ->  -(im)*(((c .* vcat([s[2]],[s[i+1]-s[i-1] for i = 2:N-1], [-s[N-1]]))/2∂x) .+ ((im) .* ((vcat([s[2] - 2*s[1]], diff(diff(s)), [s[Int(N-1)] - 2*s[Int(N)]])/∂x^2) .- (Vx .* s) .- (abs.(s).^2 .* s) .+ s .- (G .* s) .+ (μ .* s))));
 while(true)
-    k1 = ∂t2.*sd(u);
-    k2 = ∂t2.*sd(u.+(k1./2));
-    k3 = ∂t2.*sd(u.+(k2./2));
-    k4 = ∂t2.*sd(u.+(k3));
+    k1 = ∂t.*sd(u);
+    k2 = ∂t.*sd(u.+(k1./2));
+    k3 = ∂t.*sd(u.+(k2./2));
+    k4 = ∂t.*sd(u.+(k3));
     u1 = u .+ ((k1 .+ (2 .* k2) .+ (2 .* k3) .+ k4)./6);
     global n += 1;
-    if(mod(n,Int(1/∂t))==0)
+    if(mod(n,round(1/∂t))==0)
         global u_ic = [u_ic u1];
         push!(tim,(n-1)*∂t);
-        push!(err, norm(abs.(u1) .- abs.(u)));
+        push!(err, norm(abs.(u1).^2 .- abs.(u).^2));
         global it += 1;
         Plots.display(plot(tim,err,ylims=(10^-8,0.005),yscale=:log10));
         # sleep(0.1)
@@ -79,6 +75,8 @@ while(true)
 
 
 Plots.display(plot(x1,abs.(u_ic[:,end]).^2));
+
+Plots.display(plot(x1,abs.(u_ic[:,2]).^2 .- abs.(u_ic[:,1]).^2,xlims = (-10,10),ylims = (-0.5,0.25)));
 
 # for i = 1 : size(u_save)[1]
 #     Plots.display(plot(x1, abs.(u_save[:,i])));
